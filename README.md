@@ -12,6 +12,6 @@ The GitHub repository for this project contains the Tarpaulin OpenAPI specificat
 
 
 
-This project is contributed by Bhavya Parikh, Hema Susmita Padala and Umayal Annamalai.
+This project is contributed by Bhavya Parikh, Susmita Padala and Umayal Annamalai.
  
 
