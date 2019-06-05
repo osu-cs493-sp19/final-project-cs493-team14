@@ -1,4 +1,4 @@
-# CS 493 Final Project
+## CS 493 Final Project
 
 This is an application an API called Tarpaulin, a lightweight course management tool that’s an “alternative” to Canvas.
 
@@ -11,6 +11,7 @@ The Tarpaulin API you implement must support all of the endpoints described in t
 The GitHub repository for this project contains the Tarpaulin OpenAPI specification. 
 
 
-This project is contributed by Bhavya Parikh, Susmita Padala and Umayal Annamalai.
+
+This project is contributed by Bhavya Parikh, Hema Susmita Padala and Umayal Annamalai.
  
 
