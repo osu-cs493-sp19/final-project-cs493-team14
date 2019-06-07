@@ -8,7 +8,6 @@ const { validateAgainstSchema } = require('../lib/validation');
 const { generateAuthToken, requireAuthentication } = require('../lib/auth');
 const { UserSchema, insertNewUser, getUserById, getUserByEmail, validateUser, checkUserisAdmin } = require('../models/user');
 const { getCoursesByInstructorId } = require('../models/course');
-const { generateAuthToken, requireAuthentication } = require('../lib/auth');
 
 router.post('/', async (req, res) => {
   const checkUser = await checkUserisAdmin(req.user);
