@@ -87,25 +87,3 @@ db.assignments.insertMany([
         "due": "2019-06-14T17:00:00-07:00",
     }
 ]);
-
-  courseId:
-    oneOf:
-      - type: integer
-      - type: string
-    description: >
-      ID of the Course associated with the Assignment.  Exact type/format will depend on your implementation but will likely be either an integer or a string.
-    example: "123"
-  title:
-    type: string
-    description: Assignment description.
-    example: Assignment 3
-  points:
-    type: integer
-    description: Possible points for the Assignment.
-    example: 100
-  due:
-    type: string
-    format: date-time
-    description: >
-      Date and time Assignment is due.  Should be in ISO 8601 format.
-    example: "2019-06-14T17:00:00-07:00"

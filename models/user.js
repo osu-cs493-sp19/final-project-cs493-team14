@@ -56,7 +56,7 @@ exports.getUserById = getUserById;
 /*
 * Fetch a user from the DB based on user email.
 */
-async function getUserById(userEmail, includePassword) {
+async function getUserByEmail(userEmail, includePassword) {
     const db = getDBReference();
     const collection = db.collection('users');
     const projection = includePassword ? {} : { password: 0 };
