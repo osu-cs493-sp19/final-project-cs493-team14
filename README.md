@@ -1,6 +1,6 @@
 ## CS 493 Final Project
 
-This is an application an API called Tarpaulin, a lightweight course management tool that’s an “alternative” to Canvas.
+This is an application with an API called Tarpaulin, a lightweight course management tool that’s an “alternative” to Canvas.
 
 In particular, Tarpaulin allows users (instructors and students) to see information about the courses they’re teaching/taking.  
 
