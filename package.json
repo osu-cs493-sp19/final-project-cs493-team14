@@ -1,0 +1,40 @@
+{
+  "name": "final-project",
+  "version": "1.1.0",
+  "description": "A small canvas-like api for education",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "NODE_ENV=development nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/osu-cs493-sp19/final-project-cs-493-runtime-terror.git"
+  },
+  "author": "Bhavya Parikh <parikhb@oregonstate.edu>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/osu-cs493-sp19/final-project-cs-493-runtime-terror/issues"
+  },
+  "homepage": "https://github.com/osu-cs493-sp19/final-project-cs-493-runtime-terror#readme",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "logger": "0.0.1",
+    "moment": "^2.24.0",
+    "mongo": "^0.1.0",
+    "mongodb": "^3.2.7",
+    "morgan": "^1.9.1",
+    "multer": "^1.4.1",
+    "redis": "^2.8.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.19.0"
+  },
+  "directories": {
+    "lib": "lib"
+  }
+}
