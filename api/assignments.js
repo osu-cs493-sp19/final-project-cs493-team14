@@ -1,41 +1,22 @@
-const express = require('express');
-const morgan = require('morgan');
-const bodyParser = require('body-parser');
+const router = require('express').Router();
 
-const api = require('./api');
-const { connectToDB } = require('./lib/mongo');
-const app = express();
-const ObjectID = require('mongodb').ObjectID;
-const port = process.env.PORT || 8000;
+const { validateAgainstSchema } = require('../lib/validation');
+const { generateAuthToken, requireAuthentication } = require('../lib/auth');
+const { getUserById, getUserByEmail, validateUser, checkUserisAdmin } = require('../models/user');
+const { getCoursesByInstructorId } = require('../models/course');
 
-//const MongoClient = require('mongodb').MongoClient;
-/*
- * Morgan is a popular logger.
- */
-app.use(morgan('dev'));
-
-app.use(bodyParser.json());
-app.use(express.static('public'));
-
-const { validateAgainstSchema } = require('./lib/validation');
-const { assignmentSchema, getAssignmentsPage, insertNewAssignment, deleteAssignmentByID, updateAssignmentByID, getAssignmentByID} = require('./models/assignment')
-const assignments = require('./assignments');
-//const reviews = require('./reviews');
-//const photos = require('./photos');
-
+const { assignmentSchema, getAssignmentsPage, insertNewAssignment, deleteAssignmentByID, updateAssignmentByID, getAssignmentByID} = require('../models/assignment')
 
 /*
  * All routes for the API are written in modules in the api/ directory.  The
  * top-level router lives in api/index.js.  That's what we include here, and
  * it provides all of the routes.
  */
-app.use('/', api);
-
 
 //GET all submissions
-app.get('/assignments', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const submissionsPage = await getAssignmentsPage(parseInt(req.query.page) || 1);
+    const assignmentsPage = await getAssignmentsPage(parseInt(req.query.page) || 1);
     res.status(200).send(assignmentsPage);
   } catch (err) {
 	  console.log(err);
@@ -46,7 +27,7 @@ app.get('/assignments', async (req, res) => {
 });
 
 //POST Request for submissions
-app.post('/assignments', async(req, res) => {
+router.post('/', async(req, res) => {
 if (validateAgainstSchema(req.body, assignmentSchema)) {
 try {
   const id = await insertNewAssignment(req.body);
@@ -66,11 +47,11 @@ else {
 });
 
 //PUT photos
-app.put('/assignments/:id', async (req, res, next) => {
+router.put('/:id', async (req, res, next) => {
 if (validateAgainstSchema(req.body, assignmentSchema)) {
   try {
-    const updateSuccessful = await updateAssignmentByID(parseInt(req.params.id), req.body);
-	console.log("in submissions")
+    const updateSuccessful = await updateAssignmentByID(req.params.id, req.body);
+	console.log(req.params.id);
 	  console.log(updateSuccessful)
     if (updateSuccessful) {
       res.status(200).send({});
@@ -91,9 +72,29 @@ else {
 }
 });
 
-app.delete('/assignments/:id', async(req, res) => {
+router.get('/:id', async (req, res) => {
+try {
+console.log("start of the literal thing") 
+	const assignment = await getAssignmentByID(req.params.id);
+	if (assignment) {
+	res.status(200).send(assignment);
+	} 
+	else {
+	next();
+	}
+} 
+catch (err) {
+	res.status(500).send({
+	error: "Unable to fetch assignment."
+	});
+}
+});
+
+
+router.delete('/:id', async(req, res, next) => {
 	try {
-  const deleteSuccessful = await deleteAssignmentByID(parseInt(req.params.id));
+  const deleteSuccessful = await deleteAssignmentByID(req.params.id);
+console.log(deleteSuccessful)
   if (deleteSuccessful) {
      res.status(204).end();
   } else {
@@ -106,22 +107,5 @@ app.delete('/assignments/:id', async(req, res) => {
 }
 });
 
-app.use('*', function (req, res, next) {
-  res.status(404).json({
-    error: "Requested resource " + req.originalUrl + " does not exist"
-  });
-});
 
-connectToDB(() => {
-  app.listen(port, () => {
-    console.log("== Server is listening on port:", port);
-  });
-}); 
-const router = require('express').Router();
-
-const { validateAgainstSchema } = require('../lib/validation');
-const { generateAuthToken, requireAuthentication } = require('../lib/auth');
-const { AssignmentSchema, insertNewAssignment, getAssignmentById } = require('../models/assignment');
-const { getUserById, getUserByEmail, validateUser, checkUserisAdmin } = require('../models/user');
-const { getCoursesByInstructorId } = require('../models/course');
-const { generateAuthToken, requireAuthentication } = require('../lib/auth');
+module.exports = router;

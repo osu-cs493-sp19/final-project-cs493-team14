@@ -7,13 +7,13 @@ const { extractValidFields } = require('../lib/validation');
 const { getDBReference } = require('../lib/mongo');
 const ObjectID = require('mongodb').ObjectID;
 exports.router = router;
-//exports.businesses = businesses;
+
 
 /*
  * Schema describing required/optional fields of a business object.
  */
 exports.assignmentSchema = {
-courseid: { required: true },
+courseId: { required: true },
 title: { required: true },
 points: { required: true },
 due: { required: true }
@@ -47,38 +47,15 @@ exports.getAssignmentsPage = async function (page) {
 };
 
 exports.getAssignmentByID = async function getAssignmentByID(id) {
-  const db = getDBReference();
+console.log("start of func")  
+const db = getDBReference();
   const collection = db.collection('assignments');
-  
-  const test = collection.aggregate([
-  {
-    $match: { _id: id}
-  },
-  {
-    $lookup: {
-      from: "reviews",
-      localField: "_id",
-      foreignField: "businessid",
-      as: "reviews"
-    }
-  },
-  {
-    $lookup: {
-      from: "photos",
-      localField: "_id",
-      foreignField: "businessid",
-      as: "photos"
-    }
-  }
-]).toArray();
-
-console.log(test);
-  
+  console.log("in here");
   const results = await collection.find({
-    //_id: new ObjectID(id)
-	_id:id
+    _id: new ObjectID(id)
+	//_id:id
   }).toArray();
-  return test;
+  return results[0];
 }
 
 //NEW POST create a new submission
@@ -86,10 +63,10 @@ exports.insertNewAssignment = async function(assignment) {
   // const lodgingToInsert = extractValidFields(lodging);
   const db = getDBReference();
   const collection = db.collection('assignments');
-  var newid = (collection.find().count())
+  //var newid = (collection.find().count())
   console.log(collection.countDocuments({}));
   const result = await collection.insertOne(
-  {_id: newid,
+  {
   assignment
   });
   return result.insertedId;
@@ -99,7 +76,7 @@ exports.insertNewAssignment = async function(assignment) {
 //NEW PUT update a submission
 exports.updateAssignmentByID = async function updateAssignmentByID(id, assignment) {
   const assignmentValues = {
-courseid: assignment.courseid,
+courseId: assignment.courseId,
 title: assignment.title,
 points: assignment.points,
 due: assignment.due
@@ -107,9 +84,10 @@ due: assignment.due
   const db = getDBReference();
   const collection = db.collection('assignments');
   const result = await collection.replaceOne(
-    { _id: id },
+    { _id: new ObjectID(id) },
      assignmentValues
   );
+console.log(result[0])
   return result.matchedCount > 0;
 }
 
@@ -119,8 +97,8 @@ exports.deleteAssignmentByID = async function deleteAssignmentByID(id) {
    const db = getDBReference();
    const collection = db.collection('assignments');
     const result = await collection.deleteOne({
-    //_id: new ObjectID(id)
-	_id:id
+    _id: new ObjectID(id)
+	//_id: id
   });
   console.log(result.deletedCount)
   return result.deletedCount > 0;
