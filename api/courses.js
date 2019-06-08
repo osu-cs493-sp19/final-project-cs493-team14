@@ -9,7 +9,7 @@ const { validateAgainstSchema, validateFieldsForPatch } = require('../lib/valida
 */
 const {
   CourseSchema,
-  getCoursePage,
+  getAllCourses,
   getCourseById,
   insertNewCourse,
   deleteCourseById
@@ -24,17 +24,31 @@ router.get('/', async (req, res) => {
      * Fetch page info, generate HATEOAS links for surrounding pages and then
      * send response.
      */
-    const coursesPage = await getCoursePage(parseInt(req.query.page) || 1);
-    coursesPage.links = {};
-    if (coursesPage.page < coursesPage.totalPages) {
-      coursesPage.links.nextPage = `/courses?page=${coursesPage.page + 1}`;
-      coursesPage.links.lastPage = `/courses?page=${coursesPage.totalPages}`;
+    if (req.query.page) {
+      const coursesPage = await getAllCourses(1 , req.query.page);
+      res.status(200).send(coursesPage);
+    } else if (req.query.subject) {
+      const coursesSubject = await getAllCourses(2 , req.query.subject);
+      res.status(200).send(coursesSubject);
+    } else if (req.query.number) {
+      const coursesNumber = await getAllCourses(3 , req.query.number);
+      res.status(200).send(coursesNumber);
+    } else if (req.query.term) {
+      const coursesTerm = await getAllCourses(4 , req.query.term);
+      res.status(200).send(coursesTerm);
+    } else {
+      const coursesAll = await getAllCourses(0 , 0);
+      res.status(200).send(coursesAll);
     }
-    if (coursesPage.page > 1) {
-      coursesPage.links.prevPage = `/courses?page=${coursesPage.page - 1}`;
-      coursesPage.links.firstPage = '/courses?page=1';
-    }
-    res.status(200).send(coursesPage);
+    // coursesPage.links = {};
+    // if (coursesPage.page < coursesPage.totalPages) {
+    //   coursesPage.links.nextPage = `/courses?page=${coursesPage.page + 1}`;
+    //   coursesPage.links.lastPage = `/courses?page=${coursesPage.totalPages}`;
+    // }
+    // if (coursesPage.page > 1) {
+    //   coursesPage.links.prevPage = `/courses?page=${coursesPage.page - 1}`;
+    //   coursesPage.links.firstPage = '/courses?page=1';
+    // }
   } catch (err) {
     console.error(err);
     res.status(500).send({

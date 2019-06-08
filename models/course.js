@@ -24,34 +24,61 @@ exports.CourseSchema = CourseSchema;
  * Executes a DB query to return a single page of courses.  Returns a
  * Promise that resolves to an array containing the fetched page of Coursees.
 */
-exports.getCoursePage = async function(page) {
+exports.getAllCourses = async function(type, query) {
   const db = getDBReference();
-  const collection = db.collection('course');
+  const collection = db.collection('courses');
   const count = await collection.countDocuments();
-    /*
-    * Compute last page number and make sure page is within allowed bounds.
-    * Compute offset into collection.
-    */
+  if (type == 1) {
+    var page = query;
     const pageSize = 10;
     const lastPage = Math.ceil(count / pageSize);
-    page = page > lastPage ? lastPage : page;
     page = page < 1 ? 1 : page;
+    page = page > lastPage ? lastPage : page;
     const offset = (page - 1) * pageSize;
-
+  
     const results = await collection.find({})
-        .sort({ _id: 1 })
-        .skip(offset)
-        .limit(pageSize)
-        .toArray();
-
+      .skip(offset)
+      .limit(pageSize)
+      .toArray();
+    
     return {
         courses: results,
         page: page,
         totalPages: lastPage,
         pageSize: pageSize,
-        count: count,
-        links: links
+        count: count
     };
+  } else if (type == 2) {
+    const subjectQ = query.toString();
+    const results = await collection.find({subject: subjectQ})
+      .toArray();
+  
+    return {
+      courses: results
+    };
+  } else if (type == 3) {
+    const numberQ = query.toString();
+    const results = await collection.find({number: numberQ})
+      .toArray();
+  
+    return {
+      courses: results
+    };
+  } else if (type == 4) {
+    const termQ = query.toString();
+    const results = await collection.find({term: termQ})
+      .toArray();
+  
+    return {
+      courses: results
+    };
+  } else {
+    const results = await collection.find({})
+      .toArray();
+    return {
+      courses: results
+    };
+  }
 };
 
 /*
