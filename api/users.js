@@ -9,7 +9,8 @@ const { generateAuthToken, requireAuthentication } = require('../lib/auth');
 const { UserSchema, insertNewUser, getUserById, getUserByEmail, validateUser, checkUserisAdmin } = require('../models/user');
 const { getCoursesByInstructorId } = require('../models/course');
 
-router.post('/', async (req, res) => {
+router.post('/', requireAuthentication, async (req, res) => {
+  console.log("req user: ", req.user);
   const checkUser = await checkUserisAdmin(req.user);
   if (validateAgainstSchema(req.body, UserSchema)) {
     try {
@@ -23,6 +24,7 @@ router.post('/', async (req, res) => {
         });
       } else {
         const id = await insertNewUser(req.body);
+        console.log("newUser _id: ", id);
         res.status(201).send({
           _id: id
         });
@@ -41,11 +43,14 @@ router.post('/', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-  if (req.body && req.body.id && req.body.password) {
+  if (req.body && req.body.email && req.body.password) {
     try {
       const authenticated = await validateUser(req.body.email, req.body.password);
       if (authenticated) {
-        const token = generateAuthToken(req.body.id);
+        const user = await getUserByEmail(req.body.email);
+        const token = generateAuthToken(user._id);
+        console.log("_id: ", user);
+        console.log("auth token: ", token);
         res.status(200).send({
           token: token
         });
@@ -69,6 +74,7 @@ router.post('/login', async (req, res) => {
 router.get('/:id', requireAuthentication, async (req, res, next) => {
   if (req.params.id === req.user) {
     try {
+      console.log("req params id: ", req.params.id);
       const user = await getUserById(req.params.id);
       if (user) {
         if (user.role == "instructor") {
