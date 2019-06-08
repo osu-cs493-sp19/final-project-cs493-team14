@@ -7,22 +7,20 @@ const { extractValidFields } = require('../lib/validation');
 const { getDBReference } = require('../lib/mongo');
 const ObjectID = require('mongodb').ObjectID;
 exports.router = router;
-
+//exports.businesses = businesses;
 
 /*
  * Schema describing required/optional fields of a business object.
  */
-exports.assignmentSchema = {
-courseId: { required: true },
-title: { required: true },
-points: { required: true },
-due: { required: true }
+exports.submissionSchema = {
+  studentid: { required: true },
+  timestamp: { required: true }
 };
 
 //NEW GET all businesses
-exports.getAssignmentsPage = async function (page) {
+exports.getSubimissionsPage = async function (page) {
   const db = getDBReference();
-  const collection = db.collection('assignments');
+  const collection = db.collection('submissions');
   const count = await collection.countDocuments();
 
   const pageSize = 10;
@@ -38,7 +36,7 @@ exports.getAssignmentsPage = async function (page) {
     .toArray();
 
   return {
-    assignments: results,
+    submissions: results,
     page: page,
     totalPages: lastPage,
     pageSize: pageSize,
@@ -46,59 +44,79 @@ exports.getAssignmentsPage = async function (page) {
   };
 };
 
-exports.getAssignmentByID = async function getAssignmentByID(id) {
-console.log("start of func")  
-const db = getDBReference();
-  const collection = db.collection('assignments');
-  console.log("in here");
+exports.getSubmissionByID = async function getSubmissionByID(id) {
+  const db = getDBReference();
+  const collection = db.collection('submissions');
+  
+  const test = collection.aggregate([
+  {
+    $match: { _id: id}
+  },
+  {
+    $lookup: {
+      from: "reviews",
+      localField: "_id",
+      foreignField: "businessid",
+      as: "reviews"
+    }
+  },
+  {
+    $lookup: {
+      from: "photos",
+      localField: "_id",
+      foreignField: "businessid",
+      as: "photos"
+    }
+  }
+]).toArray();
+
+console.log(test);
+  
   const results = await collection.find({
-    _id: new ObjectID(id)
-	//_id:id
+    //_id: new ObjectID(id)
+	_id:id
   }).toArray();
-  return results[0];
+  return test;
 }
 
 //NEW POST create a new submission
-exports.insertNewAssignment = async function(assignment) {
+exports.insertNewSubmission = async function(submission) {
   // const lodgingToInsert = extractValidFields(lodging);
   const db = getDBReference();
-  const collection = db.collection('assignments');
-  //var newid = (collection.find().count())
+  const collection = db.collection('submissions');
+  var newid = (collection.find().count())
   console.log(collection.countDocuments({}));
   const result = await collection.insertOne(
-  {
-  assignment
+  {_id: newid,
+  submission
   });
   return result.insertedId;
 };
 
 
 //NEW PUT update a submission
-exports.updateAssignmentByID = async function updateAssignmentByID(id, assignment) {
-  const assignmentValues = {
-courseId: assignment.courseId,
-title: assignment.title,
-points: assignment.points,
-due: assignment.due
+exports.updateSubmissionByID = async function updateSubmissionByID(id, submission) {
+  const submissionValues = {
+  studentid: submission.studentid,
+  timestamp: submission.timestamp
   };
   const db = getDBReference();
-  const collection = db.collection('assignments');
+  const collection = db.collection('submissions');
   const result = await collection.replaceOne(
-    { _id: new ObjectID(id) },
-     assignmentValues
+    { _id: id },
+     submissionValues
   );
-console.log(result[0])
   return result.matchedCount > 0;
 }
 
 
 //NEW DELETE a submission
-exports.deleteAssignmentByID = async function deleteAssignmentByID(id) {
+exports.deleteSubmissionByID = async function deleteSubmissionByID(id) {
    const db = getDBReference();
-   const collection = db.collection('assignments');
+   const collection = db.collection('submissions');
     const result = await collection.deleteOne({
-    _id: new ObjectID(id)
-	//_id: id
+    //_id: new ObjectID(id)
+	_id:id
   });
   console.log(result.deletedCount)
   return result.deletedCount > 0;
