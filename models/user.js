@@ -12,9 +12,9 @@ const bcrypt = require('bcryptjs');
  */
 const UserSchema = {
     name: { required: true },
+    role: { required: true },
     email: { required: true },
     password: {required: true},
-    admin: {required: false}
 };
 exports.UserSchema = UserSchema;
 
@@ -52,9 +52,39 @@ async function getUserById(id, includePassword) {
     }
 };
 exports.getUserById = getUserById;
+
+/*
+* Fetch a user from the DB based on user email.
+*/
+async function getUserByEmail(userEmail, includePassword) {
+    const db = getDBReference();
+    const collection = db.collection('users');
+    const projection = includePassword ? {} : { password: 0 };
+    const results = await collection
+        .find({ email: userEmail })
+        .project(projection)
+        .toArray();
+    return results[0];
+};
+exports.getUserByEmail = getUserByEmail;
   
-exports.validateUser = async function (id, password) {
-    const user = await getUserById(id, true);
+exports.validateUser = async function (email, password) {
+    const user = await getUserByEmail(email, true);
+    console.log("user: ", user);
+    console.log("password, user.password: ", password, ", ", user.password);
     const authenticated = user && await bcrypt.compare(password, user.password);
+    console.log("authenticated: ", authenticated);
     return authenticated;
 };
+
+/* Checks if user is admin*/
+exports.checkUserisAdmin = async function (id) {
+    const db = getDBReference();
+    const collection = db.collection('users');
+    const results = await collection
+      .find({ _id: new ObjectId(id) })
+      .toArray();
+    if (results[0].role == "student") {
+        return 0;
+    }
+  };
