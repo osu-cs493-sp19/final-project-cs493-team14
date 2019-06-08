@@ -70,16 +70,19 @@ exports.getUserByEmail = getUserByEmail;
   
 exports.validateUser = async function (email, password) {
     const user = await getUserByEmail(email, true);
+    console.log("user: ", user);
+    console.log("password, user.password: ", password, ", ", user.password);
     const authenticated = user && await bcrypt.compare(password, user.password);
+    console.log("authenticated: ", authenticated);
     return authenticated;
 };
 
 /* Checks if user is admin*/
 exports.checkUserisAdmin = async function (id) {
-    const projection = includePassword ? {} : { password: 0 };
+    const db = getDBReference();
+    const collection = db.collection('users');
     const results = await collection
       .find({ _id: new ObjectId(id) })
-      .project(projection)
       .toArray();
     if (results[0].role == "student") {
         return 0;

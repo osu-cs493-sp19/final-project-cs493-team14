@@ -3,43 +3,43 @@ db.users.insertMany([
         "name": "Harry Potter",
         "role": "student",
         "email": "harry@email.com",
-        "password": "hunter2"
+        "password": "$2a$08$Y00/JO/uN9n0dHKuudRX2eKksWMIHXDLzHWKuz/K67alAYsZRRike"
     },
     {
         "name": "Albus Dumbledore",
         "role": "admin",
         "email": "albus@email.com",
-        "password": "hunter2"
+        "password": "$2a$08$Y00/JO/uN9n0dHKuudRX2eKksWMIHXDLzHWKuz/K67alAYsZRRike"
     },
     {
         "name": "Minerva McGonogall",
         "role": "instructor",
         "email": "minerva@email.com",
-        "password": "hunter2"
+        "password": "$2a$08$Y00/JO/uN9n0dHKuudRX2eKksWMIHXDLzHWKuz/K67alAYsZRRike"
     },
     {
         "name": "Ronald Weasley",
         "role": "student",
         "email": "ron@email.com",
-        "password": "hunter2"
+        "password": "$2a$08$Y00/JO/uN9n0dHKuudRX2eKksWMIHXDLzHWKuz/K67alAYsZRRike"
     },
     {
         "name": "Hermoine Granger",
         "role": "student",
         "email": "hermoine@email.com",
-        "password": "hunter2"
+        "password": "$2a$08$Y00/JO/uN9n0dHKuudRX2eKksWMIHXDLzHWKuz/K67alAYsZRRike"
     },
     {
         "name": "Neville Longbottom",
         "role": "student",
         "email": "neville@email.com",
-        "password": "hunter2"
+        "password": "$2a$08$Y00/JO/uN9n0dHKuudRX2eKksWMIHXDLzHWKuz/K67alAYsZRRike"
     },
     {
         "name": "Draco Malfoy",
         "role": "student",
         "email": "draco@email.com",
-        "password": "hunter2"
+        "password": "$2a$08$Y00/JO/uN9n0dHKuudRX2eKksWMIHXDLzHWKuz/K67alAYsZRRike"
     },
     {
         "name": "Severus Snape",
