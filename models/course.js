@@ -7,7 +7,7 @@ const { ObjectId } = require('mongodb');
 const { getDBReference } = require('../lib/mongo');
 const { extractValidFields } = require('../lib/validation');
 const bcrypt = require('bcryptjs');
-const ObjectID = require('mongodb').ObjectID;
+const { ObjectID,  GridFSBucket} = require('mongodb');
 
 /*
  * Schema describing required/optional fields of a course object.
@@ -17,10 +17,46 @@ const CourseSchema = {
   number: { required: true },
   title: { required: true },
   term: { required: true },
-  instructorId: { required: true },
+  instructorId: { required: true }
   //enrolledStudents: {required: false}
 };
 exports.CourseSchema = CourseSchema;
+const fs = require('fs');
+
+function saveCSVFile (csv) {
+  return new Promise((resolve, reject) => {
+    const db = getDBReference();
+    const bucket = new GridFSBucket(db, { bucketName: 'courses' });
+
+    const metadata = {
+      contentType: csv.contentType
+    };
+
+    const uploadStream = bucket.openUploadStream(
+       csv.filename,
+      { metadata: metadata }
+    );
+
+    fs.createReadStream(csv.path)
+      .pipe(uploadStream)
+      .on('error', (err) => {
+        reject(err);
+      })
+      .on('finish', (result) => {
+        resolve(result._id);
+      });
+  });
+};
+exports.saveCSVFile = saveCSVFile;
+
+function getDownloadStreamByFilename (filename) {
+  const db = getDBReference();
+  console.log("fileStream downlaod name: ", filename);
+  const bucket = new GridFSBucket(db, { bucketName: 'courses' });
+  console.log("before return: ", bucket.openDownloadStreamByName(filename));
+  return bucket.openDownloadStreamByName(filename);
+};
+exports.getDownloadStreamByFilename = getDownloadStreamByFilename;
  
 /*
  * Executes a DB query to return a single page of courses.  Returns a
@@ -140,7 +176,7 @@ async function getStudentsByCourseId(id) {
   } else {
     const results = await collection
       .find({ _id: new ObjectId(id) })
-      .project({ _id: 0, subject: 0, number: 0, title: 0, term: 0, instructorID: 0 })
+      .project({ _id: 0, subject: 0, number: 0, title: 0, term: 0, instructorId: 0 })
       .toArray();
     return results[0];
   }
@@ -174,7 +210,7 @@ async function getRosterByCourseId(id) {
       }
     },
     {
-      $project : { _id: 0, subject: 0, number: 0, title: 0, term: 0, instructorID: 0, enrolledStudents: 0, "studentsRoster.role" : 0 , "studentsRoster.password" : 0 }
+      $project : { _id: 0, subject: 0, number: 0, title: 0, term: 0, instructorId: 0, enrolledStudents: 0, "studentsRoster.role" : 0 , "studentsRoster.password" : 0 }
     }
   ]).toArray();
   console.log("instructor Courses results: ", results);
@@ -221,21 +257,46 @@ async function getAssignmentsByCourseId(id) {
 };
 exports.getAssignmentsByCourseId = getAssignmentsByCourseId;
 
-async function updateCourseByID(id, course) {
-  const courseValues = {
-    subject: course.subject,
-    number: course.number,
-    title: course.title,
-    term: course.term,
-    instructorId: course.instructorId
-  };
+async function updateCourseById(id, course) {
   const db = getDBReference();
   const collection = db.collection('courses');
-  const result = await collection.replaceOne(
+  const result = await collection.updateOne(
     { _id: new ObjectID(id) },
-     courseValues
+    {$set: 
+      { 
+        subject: course.subject,   
+        number: course.number,
+        title: course.title,
+        term: course.term,
+        instructorId: course.instructorId
+      }
+    }
   );
   console.log(result[0])
   return result.matchedCount > 0;
 }
-exports.updateCourseByID = updateCourseByID;
+exports.updateCourseById = updateCourseById;
+
+async function updateEnrollmentByCourseId(id, course) {
+  const db = getDBReference();
+  const collection = db.collection('courses');
+  const result = await collection.update(
+    { _id: new ObjectID(id) },
+    { $push: { enrolledStudents: { $each: course.students } } }
+  );
+  console.log(result[0])
+  return result.matchedCount > 0;
+}
+exports.updateEnrollmentByCourseId = updateEnrollmentByCourseId;
+
+async function removeEnrollmentByCourseId(id, course) {
+  const db = getDBReference();
+  const collection = db.collection('courses');
+  const result = await collection.update(
+    { _id: new ObjectID(id) },
+    { $pull: { enrolledStudents: { $in: course.students } } }
+  );
+  console.log(result[0])
+  return result.matchedCount > 0;
+}
+exports.removeEnrollmentByCourseId = removeEnrollmentByCourseId;

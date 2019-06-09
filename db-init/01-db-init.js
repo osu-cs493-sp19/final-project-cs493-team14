@@ -67,7 +67,7 @@ db.courses.insertMany([
         "number": "1",
         "title": "Charms",
         "term": "sp19",
-        "instructorID": db.users.find()[8]._id,
+        "instructorId": db.users.find()[8]._id,
         "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
                        db.users.find()[4]._id, db.users.find()[5]._id]
     },
@@ -76,7 +76,7 @@ db.courses.insertMany([
         "number": "1",
         "title": "Transfiguration",
         "term": "sp19",
-        "instructorID": db.users.find()[2]._id,
+        "instructorId": db.users.find()[2]._id,
         "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
         db.users.find()[4]._id, db.users.find()[5]._id]
     },
@@ -85,7 +85,7 @@ db.courses.insertMany([
         "number": "1",
         "title": "Potions",
         "term": "sp19",
-        "instructorID": db.users.find()[7]._id,
+        "instructorId": db.users.find()[7]._id,
         "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
         db.users.find()[4]._id, db.users.find()[5]._id]
     },
@@ -94,7 +94,7 @@ db.courses.insertMany([
         "number": "493",
         "title": "Cloud Application Development",
         "term": "sp19",
-        "instructorID": db.users.find()[2]._id,
+        "instructorId": db.users.find()[2]._id,
         "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
         db.users.find()[4]._id, db.users.find()[5]._id]
     }
