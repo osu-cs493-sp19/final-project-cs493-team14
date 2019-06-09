@@ -61,29 +61,75 @@ db.users.insertMany([
     }
 ]);
 
+db.courses.insertMany([
+    {
+        "subject": "CH",
+        "number": "1",
+        "title": "Charms",
+        "term": "sp19",
+        "instructorID": db.users.find()[8]._id,
+        "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
+                       db.users.find()[4]._id, db.users.find()[5]._id]
+    },
+    {
+        "subject": "TR",
+        "number": "1",
+        "title": "Transfiguration",
+        "term": "sp19",
+        "instructorID": db.users.find()[2]._id,
+        "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
+        db.users.find()[4]._id, db.users.find()[5]._id]
+    },
+    {
+        "subject": "PO",
+        "number": "1",
+        "title": "Potions",
+        "term": "sp19",
+        "instructorID": db.users.find()[7]._id,
+        "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
+        db.users.find()[4]._id, db.users.find()[5]._id]
+    },
+    {
+        "subject": "CS",
+        "number": "493",
+        "title": "Cloud Application Development",
+        "term": "sp19",
+        "instructorID": db.users.find()[2]._id,
+        "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
+        db.users.find()[4]._id, db.users.find()[5]._id]
+    }
+]);
+
 db.assignments.insertMany([
     {
-        "courseId": 0,
+        "courseId": db.courses.find()[0]._id,
         "title": "Assignment 0",
         "points": 50,
         "due": "2019-06-14T17:00:00-07:00",
     },
     {   
-        "courseId": 1,
+        "courseId": db.courses.find()[1]._id,
         "title": "Assignment 1",
         "points": 100,
         "due": "2019-06-14T17:00:00-07:00",
     },
     {
-        "courseId": 2,
+        "courseId": db.courses.find()[2]._id,
         "title": "Assignment 2",
         "points": 200,
         "due": "2019-06-14T17:00:00-07:00",
     },
     {
-        "courseId": 3,
+        "courseId": db.courses.find()[3]._id,
         "title": "Assignment 3",
         "points": 300,
         "due": "2019-06-14T17:00:00-07:00",
+    },
+    {
+        "courseId": db.courses.find()[0]._id,
+        "title": "Assignment 4",
+        "points": 500,
+        "due": "2019-06-14T17:00:00-07:00",
     }
 ]);
+
