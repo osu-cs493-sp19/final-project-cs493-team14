@@ -6,7 +6,8 @@ const { ObjectId } = require('mongodb');
 
 const { getDBReference } = require('../lib/mongo');
 const { extractValidFields } = require('../lib/validation');
-const bcrypt = require('bcryptjs')
+const bcrypt = require('bcryptjs');
+const ObjectID = require('mongodb').ObjectID;
 
 /*
  * Schema describing required/optional fields of a course object.
@@ -16,7 +17,8 @@ const CourseSchema = {
   number: { required: true },
   title: { required: true },
   term: { required: true },
-  instructorId: { required: true }
+  instructorId: { required: true },
+  //enrolledStudents: {required: false}
 };
 exports.CourseSchema = CourseSchema;
  
@@ -37,6 +39,7 @@ exports.getAllCourses = async function(type, query) {
     const offset = (page - 1) * pageSize;
   
     const results = await collection.find({})
+      .project({ enrolledStudents: 0 })
       .skip(offset)
       .limit(pageSize)
       .toArray();
@@ -51,6 +54,7 @@ exports.getAllCourses = async function(type, query) {
   } else if (type == 2) {
     const subjectQ = query.toString();
     const results = await collection.find({subject: subjectQ})
+      .project({ enrolledStudents: 0 })
       .toArray();
   
     return {
@@ -59,6 +63,7 @@ exports.getAllCourses = async function(type, query) {
   } else if (type == 3) {
     const numberQ = query.toString();
     const results = await collection.find({number: numberQ})
+      .project({ enrolledStudents: 0 })
       .toArray();
   
     return {
@@ -67,6 +72,7 @@ exports.getAllCourses = async function(type, query) {
   } else if (type == 4) {
     const termQ = query.toString();
     const results = await collection.find({term: termQ})
+      .project({ enrolledStudents: 0 })
       .toArray();
   
     return {
@@ -74,6 +80,7 @@ exports.getAllCourses = async function(type, query) {
     };
   } else {
     const results = await collection.find({})
+      .project({ enrolledStudents: 0 })
       .toArray();
     return {
       courses: results
@@ -96,6 +103,7 @@ exports.getCourseById = async function (id) {
    } else {
      const results = await collection
        .find({ _id: new ObjectId(id) })
+       .project({ enrolledStudents: 0 })
        .toArray();
      return results[0];
    }
@@ -108,7 +116,7 @@ exports.getCourseById = async function (id) {
 exports.insertNewCourse= async function (course) {
     const db = getDBReference();
     const collection = db.collection('courses');
-    const result = await collection.insertOne(course);
+    const result = await collection.insertOne({course});
     return result.insertedId;
 };
 
@@ -122,18 +130,112 @@ exports.deleteCourseById = async function (id) {
 }
 
 /*
-* Fetch a user from the DB based on user ID.
+* get students by course id
 */
-async function getCoursesByInstructorId(id, includePassword) {
-    const db = getDBReference();
-    const collection = db.collection('courses');
-    if (!ObjectId.isValid(id)) {
-      return null;
-    } else {
-      const results = await collection
-        .find({ instructorId: new ObjectId(id) })
-        .toArray();
-      return results[0];
-    }
+async function getStudentsByCourseId(id) {
+  const db = getDBReference();
+  const collection = db.collection('courses');
+  if (!ObjectId.isValid(id)) {
+    return null;
+  } else {
+    const results = await collection
+      .find({ _id: new ObjectId(id) })
+      .project({ _id: 0, subject: 0, number: 0, title: 0, term: 0, instructorID: 0 })
+      .toArray();
+    return results[0];
+  }
+  console.log("instructor Courses results: ", results[0]);
+  return results[0];
 };
-exports.getCoursesByInstructorId = getCoursesByInstructorId;
+exports.getStudentsByCourseId = getStudentsByCourseId;
+
+/*
+* get roster by course id
+*/
+async function getRosterByCourseId(id) {
+  const db = getDBReference();
+  const collection = db.collection('courses');
+  const midResults = await collection
+    .find({ _id: new ObjectId(id) })
+    .toArray();
+  const results = await collection.aggregate([
+    {
+      $match: { _id: new ObjectID(id) },
+    },
+    {
+      $unwind: "$enrolledStudents"
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "enrolledStudents",
+        foreignField: "_id",
+        as: "studentsRoster"
+      }
+    },
+    {
+      $project : { _id: 0, subject: 0, number: 0, title: 0, term: 0, instructorID: 0, enrolledStudents: 0, "studentsRoster.role" : 0 , "studentsRoster.password" : 0 }
+    }
+  ]).toArray();
+  console.log("instructor Courses results: ", results);
+  var csv = "ID, Name, Email\n";
+  results.forEach(function(elem) {
+       csv += elem.studentsRoster[0]._id;
+       csv += ", ";
+       csv += elem.studentsRoster[0].name;
+       csv += ", ";
+       csv += elem.studentsRoster[0].email;
+       csv += "\n";
+  });
+  return csv;
+};
+exports.getRosterByCourseId = getRosterByCourseId;
+
+/*
+* get students by assignment id
+*/
+async function getAssignmentsByCourseId(id) {
+  console.log("in");
+  const db = getDBReference();
+  const collection = db.collection('courses');
+  console.log("b4 results");
+  const results = await collection.aggregate([
+    {
+      $match: { _id: new ObjectID(id) }
+    },
+    {
+      $lookup: {
+        from: "assignments",
+        localField: "_id",
+        foreignField: "courseId",
+        as: "courseAssignments"
+      }
+    },
+    { 
+      $project : { "courseAssignments.courseId" : 0 , "courseAssignments.title" : 0, 
+      "courseAssignments.points" : 0, "courseAssignments.due" : 0 }
+    }
+  ]).toArray();
+  console.log("course Assignments results: ", results[0]);
+  return results[0];
+};
+exports.getAssignmentsByCourseId = getAssignmentsByCourseId;
+
+async function updateCourseByID(id, course) {
+  const courseValues = {
+    subject: course.subject,
+    number: course.number,
+    title: course.title,
+    term: course.term,
+    instructorId: course.instructorId
+  };
+  const db = getDBReference();
+  const collection = db.collection('courses');
+  const result = await collection.replaceOne(
+    { _id: new ObjectID(id) },
+     courseValues
+  );
+  console.log(result[0])
+  return result.matchedCount > 0;
+}
+exports.updateCourseByID = updateCourseByID;

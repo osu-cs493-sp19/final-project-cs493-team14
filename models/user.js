@@ -67,6 +67,27 @@ async function getUserByEmail(userEmail, includePassword) {
     return results[0];
 };
 exports.getUserByEmail = getUserByEmail;
+
+async function getCoursesByInstructorId(id) {
+    const db = getDBReference();
+    const collection = db.collection('users');
+    const results = await collection.aggregate([
+      {
+        $match: { _id: id }
+      },
+      {
+        $lookup: {
+          from: "courses",
+          localField: "_id",
+          foreignField: "instructorId",
+          as: "instructorCourses"
+        }
+      }
+    ]).toArray();
+    console.log("instructor Courses results: ", results[0]);
+    return results[0];
+};
+exports.getCoursesByInstructorId = getCoursesByInstructorId;
   
 exports.validateUser = async function (email, password) {
     const user = await getUserByEmail(email, true);
@@ -86,5 +107,9 @@ exports.checkUserisAdmin = async function (id) {
       .toArray();
     if (results[0].role == "student") {
         return 0;
+    } else if (results[0].role == "instructor") {
+        return 1;
+    } else if (results[0].role == "admin") {
+        return 2;
     }
   };

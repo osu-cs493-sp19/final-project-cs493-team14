@@ -67,28 +67,36 @@ db.courses.insertMany([
         "number": "1",
         "title": "Charms",
         "term": "sp19",
-        "instructorID": db.users.find()[8]._id
+        "instructorID": db.users.find()[8]._id,
+        "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
+                       db.users.find()[4]._id, db.users.find()[5]._id]
     },
     {
         "subject": "TR",
         "number": "1",
         "title": "Transfiguration",
         "term": "sp19",
-        "instructorID": db.users.find()[2]._id
+        "instructorID": db.users.find()[2]._id,
+        "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
+        db.users.find()[4]._id, db.users.find()[5]._id]
     },
     {
         "subject": "PO",
         "number": "1",
         "title": "Potions",
         "term": "sp19",
-        "instructorID": db.users.find()[7]._id
+        "instructorID": db.users.find()[7]._id,
+        "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
+        db.users.find()[4]._id, db.users.find()[5]._id]
     },
     {
         "subject": "CS",
         "number": "493",
         "title": "Cloud Application Development",
         "term": "sp19",
-        "instructorID": db.users.find()[2]._id
+        "instructorID": db.users.find()[2]._id,
+        "enrolledStudents": [db.users.find()[0]._id, db.users.find()[3]._id,
+        db.users.find()[4]._id, db.users.find()[5]._id]
     }
 ]);
 
@@ -115,6 +123,12 @@ db.assignments.insertMany([
         "courseId": db.courses.find()[3]._id,
         "title": "Assignment 3",
         "points": 300,
+        "due": "2019-06-14T17:00:00-07:00",
+    },
+    {
+        "courseId": db.courses.find()[0]._id,
+        "title": "Assignment 4",
+        "points": 500,
         "due": "2019-06-14T17:00:00-07:00",
     }
 ]);
