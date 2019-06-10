@@ -1,11 +1,14 @@
 const router = require('express').Router();
 
 const { validateAgainstSchema } = require('../lib/validation');
+const multer = require('multer');
+const crypto = require('crypto');
+const fs = require('fs');
 const { generateAuthToken, requireAuthentication } = require('../lib/auth');
 const { getUserById, getUserByEmail, validateUser, checkUserisAdmin } = require('../models/user');
 const { getCoursesByInstructorId, getCourseById } = require('../models/course');
 
-const { assignmentSchema, getAssignmentsPage, insertNewAssignment, deleteAssignmentByID, updateAssignmentByID, getAssignmentByID} = require('../models/assignment')
+const { assignmentSchema, getAssignmentsPage, getDownloadStreamById, getDownloadStreamByFilename, insertNewAssignment, deleteAssignmentByID, updateAssignmentByID, getAssignmentByID, saveSubmissionFile} = require('../models/assignment')
 
 /*
  * All routes for the API are written in modules in the api/ directory.  The
@@ -13,6 +16,74 @@ const { assignmentSchema, getAssignmentsPage, insertNewAssignment, deleteAssignm
  * it provides all of the routes.
  */
 
+ const fileTypes = {
+  'application/msword': 'doc',
+  'txt/*': 'txt'
+};
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: `${__dirname}`,
+ //destination: `C:/Users/Uma/CS493/assignment-4-uma-a/uploads/`,
+    filename: (req, file, callback) => {
+      const basename = crypto.pseudoRandomBytes(16).toString('hex');
+      const extension = fileTypes[file.mimetype];
+      callback(null, `${basename}.${extension}`);
+    }
+  }),
+  fileFilter: (req, file, callback) => {
+    callback(null, !!fileTypes[file.mimetype])
+  }
+});
+ 
+ function removeUploadedFile(file) {
+  return new Promise((resolve, reject) => {
+    fs.unlink(file.path, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+
+}
+
+ router.post('/:id/submissions', upload.single('file'), requireAuthentication, async (req, res, next) => {
+  console.log("== req.file:", req.file);
+  console.log("== req.body:", req.body);
+  var currUser = await getUserById(req.user, false)
+  if( currUser.role == "student"){
+  if (req.file && req.body) {
+    try {
+		var submissionTime = Math.round(+new Date()/1000)
+      const submission = {
+        path: req.file.path,
+        filename: req.file.filename,
+        contentType: req.file.mimetype,
+        studentid: req.user,
+        timestamp: submissionTime,
+	    assignmentid: req.params.id	
+      };
+      const id = await saveSubmissionFile(submission);
+      await removeUploadedFile(req.file);
+    
+      res.status(200).send({ id: id });
+    } catch (err) {
+      next(err);
+    }
+  } else {
+    res.status(400).send({
+      err: "Request body was invalid."
+    });
+  }
+  } else {
+    res.status(403).send({
+      error: "Unauthorized to access the specified resource"
+    });
+  }
+});
+ 
+ 
 //GET all submissions
 router.get('/', async (req, res) => {
   try {

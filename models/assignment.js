@@ -3,7 +3,8 @@ const validation = require('../lib/validation');
 const { extractValidFields } = require('../lib/validation');
 const { getUserById, getUserByEmail, validateUser, checkUserisAdmin } = require('../models/user');
 const { getDBReference } = require('../lib/mongo');
-const ObjectID = require('mongodb').ObjectID;
+const { ObjectId, GridFSBucket } = require('mongodb');
+const fs = require('fs');
 exports.router = router;
 
 
@@ -16,6 +17,52 @@ title: { required: true },
 points: { required: true },
 due: { required: true }
 };
+
+function saveSubmissionFile(file) {
+  return new Promise((resolve, reject) => {
+    const db = getDBReference();
+    const bucket = new GridFSBucket(db, { bucketName: 'submissions' });
+
+    const metadata = {
+	  contentType: file.contentType,
+      studentid: file.studentid,
+      timestamp: file.timestamp,
+	  assignmentid: file.assignmentid	
+    };
+
+    const uploadStream = bucket.openUploadStream(
+      file.filename,
+      { metadata: metadata }
+    );
+
+    fs.createReadStream(file.path)
+      .pipe(uploadStream)
+      .on('error', (err) => {
+        reject(err);
+      })
+      .on('finish', (result) => {
+        resolve(result._id);
+      });
+  });
+};
+exports.saveSubmissionFile = saveSubmissionFile;
+
+exports.getDownloadStreamById = function (id) {
+  const db = getDBReference();
+  const bucket = new GridFSBucket(db, { bucketName: 'submissions' });
+  if (!ObjectId.isValid(id)) {
+    return null;
+  } else {
+    return bucket.openDownloadStream(new ObjectId(id));
+  }
+};
+
+exports.getDownloadStreamByFilename = function (filename) {
+  const db = getDBReference();
+  const bucket = new GridFSBucket(db, { bucketName: 'submissions' });
+  return bucket.openDownloadStreamByName(filename);
+};
+
 
 //NEW GET all businesses
 exports.getAssignmentsPage = async function (page) {
