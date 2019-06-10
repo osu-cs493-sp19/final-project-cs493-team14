@@ -1,9 +1,7 @@
 const router = require('express').Router();
 const validation = require('../lib/validation');
 const { extractValidFields } = require('../lib/validation');
-//const businesses = require('../data/businesses');
-//const { reviews } = require('./reviews');
-//const { photos } = require('./photos');
+const { getUserById, getUserByEmail, validateUser, checkUserisAdmin } = require('../models/user');
 const { getDBReference } = require('../lib/mongo');
 const ObjectID = require('mongodb').ObjectID;
 exports.router = router;
@@ -46,8 +44,7 @@ exports.getAssignmentsPage = async function (page) {
   };
 };
 
-exports.getAssignmentByID = async function getAssignmentByID(id) {
-console.log("start of func")  
+exports.getAssignmentByID = async function getAssignmentByID(id) { 
 const db = getDBReference();
   const collection = db.collection('assignments');
   console.log("in here");
