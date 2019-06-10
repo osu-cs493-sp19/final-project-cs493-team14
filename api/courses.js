@@ -12,10 +12,15 @@ const {
   getAllCourses,
   getCourseById,
   insertNewCourse,
+  updateCourseById,
   deleteCourseById,
   getAssignmentsByCourseId,
   getRosterByCourseId,
-  getStudentsByCourseId
+  getStudentsByCourseId,
+  updateEnrollmentByCourseId,
+  removeEnrollmentByCourseId,
+  saveCSVFile,
+  getDownloadStreamByFilename
 } = require('../models/course');
 var fs = require('fs');
 
@@ -174,7 +179,7 @@ router.put('/:id', async (req, res, next) => {
     const userid = 1;
     if(userid == 1){
       try {
-        const updateSuccessful = await updateCourseByID(req.params.id, req.body);
+        const updateSuccessful = await updateCourseById(req.params.id, req.body);
         console.log(req.params.id);
         console.log(updateSuccessful)
         if (updateSuccessful) {
@@ -223,16 +228,47 @@ router.get('/:id/students', async (req, res, next) => {
  * Route to create a new enrolled students.
  */
 router.post('/:id/students', async (req, res, next) => {
-  if (req.body.enrolledStudents) {
+  if (req.body.students) {
     //const isAdmin = checkUserisAdmin();
     const userid = 1;
     if (userid == 1) {
       try {
-        const id = await updateEnrollmentByCourseId(req.body);
+        const id = await updateEnrollmentByCourseId(req.params.id, req.body);
         res.status(200).send({
           id: id,
           links: {
-            course: `/courses/${id}`
+            course: `/courses/${id}/students`
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({
+          error: "Error inserting course into DB.  Please try again later."
+        });
+      }
+    } else {
+      res.status(403).send({
+        error: "The request was not made by an authenticated User satisfying the authorization criteria described above."
+      });
+    }
+  } else {
+    res.status(400).send({
+      error: "Request body is not a valid course object."
+    });
+  }
+});
+
+router.delete('/:id/students', async (req, res, next) => {
+  if (req.body.students) {
+    //const isAdmin = checkUserisAdmin();
+    const userid = 1;
+    if (userid == 1) {
+      try {
+        const id = await removeEnrollmentByCourseId(req.params.id, req.body);
+        res.status(200).send({
+          id: id,
+          links: {
+            course: `/courses/${id}/students`
           }
         });
       } catch (err) {
@@ -258,11 +294,23 @@ router.get('/:id/roster', async (req, res, next) => {
     console.log("hi students");
     const roster = await getRosterByCourseId(req.params.id);
     if (roster) {
-      // fs.writeFileSync("./studentRoster.csv", roster);
-      // const responseBody = {
-      //   url: `/courses/media/files/studentRoster.csv`
-      // }
-      res.status(200).send(roster);
+      fs.writeFile("/usr/src/app/api/studentRoster.csv", roster, function(error) {
+        if (error) {
+          console.error("write error:  " + error.message);
+        } else {
+          console.log("Successful Write to ");
+        }
+      });
+      const csvFile = {
+        path: "/usr/src/app/api/studentRoster.csv",
+        contentType: "text/csv",
+        filename: "studentRoster.csv"
+      };
+      await saveCSVFile(csvFile);
+      const responseBody = {
+        url: `/courses/media/files/studentRoster.csv`
+      }
+      res.status(200).send(responseBody);
     } else {
       next();
     }
@@ -274,8 +322,8 @@ router.get('/:id/roster', async (req, res, next) => {
   }
 });
 
-router.get('/:filename', (req, res, next) => {
-  console.log("image filename: ", req.params.filename);
+router.get('/media/files/:filename', (req, res, next) => {
+  console.log("csv filename: ", req.params.filename);
   getDownloadStreamByFilename(req.params.filename)
     .on('error', (err) => {
       if (err.code === 'ENOENT') {
