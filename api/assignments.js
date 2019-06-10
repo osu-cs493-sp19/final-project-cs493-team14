@@ -3,7 +3,7 @@ const router = require('express').Router();
 const { validateAgainstSchema } = require('../lib/validation');
 const { generateAuthToken, requireAuthentication } = require('../lib/auth');
 const { getUserById, getUserByEmail, validateUser, checkUserisAdmin } = require('../models/user');
-const { getCoursesByInstructorId } = require('../models/course');
+const { getCoursesByInstructorId, getCourseById } = require('../models/course');
 
 const { assignmentSchema, getAssignmentsPage, insertNewAssignment, deleteAssignmentByID, updateAssignmentByID, getAssignmentByID} = require('../models/assignment')
 
@@ -27,7 +27,12 @@ router.get('/', async (req, res) => {
 });
 
 //POST Request for submissions
-router.post('/', async(req, res) => {
+router.post('/',  requireAuthentication, async(req, res) => {
+	console.log(req.user)
+	var currUser = await getUserById(req.user, false)
+	console.log(currUser)
+	var currCourse = await getCourseById(req.body.courseId)
+	if ((currUser.role == "instructor" && currUser._id.toString() == currCourse.instructorId) || currUser.role == "admin") {
 if (validateAgainstSchema(req.body, assignmentSchema)) {
 try {
   const id = await insertNewAssignment(req.body);
@@ -44,10 +49,20 @@ else {
     error: "Request body does not contain a valid assignment."
   });
 }
+} else {
+    res.status(403).send({
+      error: "Unauthorized to access the specified resource"
+    });
+  }
 });
 
 //PUT photos
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireAuthentication, async (req, res, next) => {
+	console.log(req.user)
+	var currUser = await getUserById(req.user, false)
+	console.log(currUser)
+	var currCourse = await getCourseById(req.body.courseId)
+	if ((currUser.role == "instructor" && currUser._id.toString() == currCourse.instructorId) || currUser.role == "admin") {
 if (validateAgainstSchema(req.body, assignmentSchema)) {
   try {
     const updateSuccessful = await updateAssignmentByID(req.params.id, req.body);
@@ -70,11 +85,15 @@ else {
     err: "Request body does not contain a valid assignment."
   });
 }
+} else {
+    res.status(403).send({
+      error: "Unauthorized to access the specified resource"
+    });
+  }
 });
 
 router.get('/:id', async (req, res) => {
 try {
-console.log("start of the literal thing") 
 	const assignment = await getAssignmentByID(req.params.id);
 	if (assignment) {
 	res.status(200).send(assignment);
@@ -91,7 +110,15 @@ catch (err) {
 });
 
 
-router.delete('/:id', async(req, res, next) => {
+router.delete('/:id', requireAuthentication, async(req, res, next) => {
+	console.log(req.user)
+	var currUser = await getUserById(req.user, false)
+	console.log(currUser)
+	var currAssign = await getAssignmentByID(req.params.id)
+	console.log("curr Assign")
+	console.log(currAssign)
+	var currCourse = await getCourseById(currAssign.courseId)
+	if ((currUser.role == "instructor" && currUser._id.toString() == currCourse.instructorId) || currUser.role == "admin") {
 	try {
   const deleteSuccessful = await deleteAssignmentByID(req.params.id);
 console.log(deleteSuccessful)
@@ -105,6 +132,11 @@ console.log(deleteSuccessful)
     error: "Unable to delete assignment."
   });
 }
+} else {
+    res.status(403).send({
+      error: "Unauthorized to access the specified resource"
+    });
+  }
 });
 
 module.exports = router;

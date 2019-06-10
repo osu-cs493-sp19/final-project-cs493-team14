@@ -6,8 +6,24 @@ const router = require('express').Router();
 
 const { validateAgainstSchema } = require('../lib/validation');
 const { generateAuthToken, requireAuthentication } = require('../lib/auth');
-const { UserSchema, insertNewUser, getUserById, getUserByEmail, validateUser, checkUserisAdmin } = require('../models/user');
+const { UserSchema, insertNewUser, getUserById, getUserByEmail, validateUser, checkUserisAdmin, getUsersPage } = require('../models/user');
 const { getCoursesByInstructorId } = require('../models/course');
+
+
+
+//GET all submissions
+router.get('/', async (req, res) => {
+  try {
+    const usersPage = await getUsersPage(parseInt(req.query.page) || 1);
+    res.status(200).send(usersPage);
+  } catch (err) {
+	  console.log(err);
+    res.status(500).send({
+      error: "Error fetching users.  Try again later."
+    });
+  }
+});
+
 
 router.post('/', requireAuthentication, async (req, res) => {
   console.log("req user: ", req.user);
