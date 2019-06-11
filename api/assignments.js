@@ -20,7 +20,9 @@ const { assignmentSchema, getAssignmentsPage, getDownloadStreamById, getDownload
 
  const fileTypes = {
   'application/msword': 'doc',
-  'txt/*': 'txt'
+  'txt/*': 'txt',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/pdf': 'pdf'
 };
 const upload = multer({
   storage: multer.diskStorage({
@@ -106,6 +108,7 @@ router.get('/:id/submissions', requireAuthentication, async (req, res, next) => 
 	var currAssign = await getAssignmentByID(req.params.id);
 	var currCourse = await getCourseById(currAssign.courseId);
   var currCourse = await getCourseById(req.body.courseId);
+  console.log("start of id submission: ");
 	if ((currUser.role == "instructor" && currUser._id.toString() == currCourse.instructorId) || currUser.role == "admin") {
     try {
       if (req.query.page) {
@@ -134,6 +137,10 @@ router.get('/:id/submissions', requireAuthentication, async (req, res, next) => 
     } catch (err) {
       next(err);
     }
+  }else {
+    res.status(403).send({
+      error: "Unauthorized to access the specified resource"
+    });
   }
 });
   

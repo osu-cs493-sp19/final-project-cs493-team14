@@ -18,7 +18,7 @@ points: { required: true },
 due: { required: true }
 };
 
-exports.getAssignmentByID = async function getAssignmentByID(id) { 
+async function getAssignmentByID(id) { 
   const db = getDBReference();
     const collection = db.collection('assignments');
     console.log("in here");
@@ -28,6 +28,7 @@ exports.getAssignmentByID = async function getAssignmentByID(id) {
     }).toArray();
     return results[0];
 }
+exports.getAssignmentByID = getAssignmentByID;
 
 function saveSubmissionFile(file) {
   return new Promise((resolve, reject) => {
@@ -69,16 +70,19 @@ async function getSubmissionInfoByAssignmentId (id) {
     const results = await bucket.find({ "metadata.assignmentid": id })
       .toArray();
     console.log("results: ", results);
-    return results[0];
+    return results;
   }
 };
 exports.getSubmissionInfoByAssignmentId = getSubmissionInfoByAssignmentId;
 
 async function getSubmissionDetailsById(id, type, query) {
+	console.log("in get details by id")
   const assignment = await getAssignmentByID(id);
   if (assignment) {
+	  console.log("got an assignment")
     assignment.submissions = [];
     arraySubmissions = await getSubmissionInfoByAssignmentId(id);
+	console.log("array submissions", arraySubmissions)
     arraySubmissions.forEach(function(submission) {
       const responseBody = {
         _id: submission._id,
@@ -95,7 +99,7 @@ async function getSubmissionDetailsById(id, type, query) {
     const count = assignment.submissions.length;
     const pageSize = 1;
     const lastPage = Math.ceil(count / pageSize);
-    const page = query;
+    const page = query-1;
     // page = page < 1 ? 1 : page;
     // page = page > lastPage ? lastPage : page;
     // const offset = (page - 1) * pageSize;
@@ -105,7 +109,7 @@ async function getSubmissionDetailsById(id, type, query) {
     //   .skip(offset)
     //   .limit(pageSize)
     //   .toArray();
-    tempArray = [assignment.submissions[query]];
+    tempArray = [assignment.submissions[page]];
     assignment.submissions = tempArray;
 
     // return {
