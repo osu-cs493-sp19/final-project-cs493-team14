@@ -18,6 +18,17 @@ points: { required: true },
 due: { required: true }
 };
 
+exports.getAssignmentByID = async function getAssignmentByID(id) { 
+  const db = getDBReference();
+    const collection = db.collection('assignments');
+    console.log("in here");
+    const results = await collection.find({
+      _id: new ObjectId(id)
+    //_id:id
+    }).toArray();
+    return results[0];
+}
+
 function saveSubmissionFile(file) {
   return new Promise((resolve, reject) => {
     const db = getDBReference();
@@ -46,6 +57,78 @@ function saveSubmissionFile(file) {
   });
 };
 exports.saveSubmissionFile = saveSubmissionFile;
+
+async function getSubmissionInfoByAssignmentId (id) {
+  const db = getDBReference();
+  // const collection = db.collection('images');
+  const bucket = new GridFSBucket(db, { bucketName: 'submissions' });
+  if (!ObjectId.isValid(id)) {
+    return null;
+  } else {
+    console.log("id: ", id);
+    const results = await bucket.find({ "metadata.assignmentid": id })
+      .toArray();
+    console.log("results: ", results);
+    return results[0];
+  }
+};
+exports.getSubmissionInfoByAssignmentId = getSubmissionInfoByAssignmentId;
+
+async function getSubmissionDetailsById(id, type, query) {
+  const assignment = await getAssignmentByID(id);
+  if (assignment) {
+    assignment.submissions = [];
+    arraySubmissions = await getSubmissionInfoByAssignmentId(id);
+    arraySubmissions.forEach(function(submission) {
+      const responseBody = {
+        _id: submission._id,
+        url: `/assignments/media/submissions/${submission.filename}`,
+        contentType: submission.metadata.contentType,
+        studentid: submission.metadata.studentid,
+        timestamp: submission.metadata.submissionTime,
+        assignmentid: submission.metadata.assignmentid
+      };
+      assignment.submissions.push(responseBody);
+    }, this); 
+  }
+  if (type == 1) {
+    const count = assignment.submissions.length;
+    const pageSize = 1;
+    const lastPage = Math.ceil(count / pageSize);
+    const page = query;
+    // page = page < 1 ? 1 : page;
+    // page = page > lastPage ? lastPage : page;
+    // const offset = (page - 1) * pageSize;
+
+    // const results = await collection.find({})
+    //   .sort({ _id: 1 })
+    //   .skip(offset)
+    //   .limit(pageSize)
+    //   .toArray();
+    tempArray = [assignment.submissions[query]];
+    assignment.submissions = tempArray;
+
+    // return {
+    //   assignments: results,
+    //   page: page,
+    //   totalPages: lastPage,
+    //   pageSize: pageSize,
+    //   count: count
+    // };
+  } else if (type == 2) {
+    const studentId = query;
+    tempArray = assignment.submissions;
+    var newArray = [];
+    tempArray.forEach(function(submission) {
+      if (submission.studentid == studentId) {
+        newArray.push(submission);
+      }
+    }, this);
+    assignment.submissions = newArray;
+  }
+  return assignment;
+};
+exports.getSubmissionDetailsById = getSubmissionDetailsById;
 
 exports.getDownloadStreamById = function (id) {
   const db = getDBReference();
@@ -91,17 +174,6 @@ exports.getAssignmentsPage = async function (page) {
   };
 };
 
-exports.getAssignmentByID = async function getAssignmentByID(id) { 
-const db = getDBReference();
-  const collection = db.collection('assignments');
-  console.log("in here");
-  const results = await collection.find({
-    _id: new ObjectID(id)
-	//_id:id
-  }).toArray();
-  return results[0];
-}
-
 //NEW POST create a new submission
 exports.insertNewAssignment = async function(assignment) {
   // const lodgingToInsert = extractValidFields(lodging);
@@ -128,7 +200,7 @@ due: assignment.due
   const db = getDBReference();
   const collection = db.collection('assignments');
   const result = await collection.replaceOne(
-    { _id: new ObjectID(id) },
+    { _id: new ObjectId(id) },
      assignmentValues
   );
 console.log(result[0])
@@ -141,7 +213,7 @@ exports.deleteAssignmentByID = async function deleteAssignmentByID(id) {
    const db = getDBReference();
    const collection = db.collection('assignments');
     const result = await collection.deleteOne({
-    _id: new ObjectID(id)
+    _id: new ObjectId(id)
 	//_id: id
   });
   console.log(result.deletedCount)

@@ -8,7 +8,9 @@ const { generateAuthToken, requireAuthentication } = require('../lib/auth');
 const { getUserById, getUserByEmail, validateUser, checkUserisAdmin } = require('../models/user');
 const { getCoursesByInstructorId, getCourseById } = require('../models/course');
 
-const { assignmentSchema, getAssignmentsPage, getDownloadStreamById, getDownloadStreamByFilename, insertNewAssignment, deleteAssignmentByID, updateAssignmentByID, getAssignmentByID, saveSubmissionFile} = require('../models/assignment')
+const { assignmentSchema, getAssignmentsPage, getDownloadStreamById, getDownloadStreamByFilename, insertNewAssignment, 
+  deleteAssignmentByID, updateAssignmentByID, getAssignmentByID, saveSubmissionFile, 
+  getSubmissionInfoByAssignmentId, getSubmissionDetailsById} = require('../models/assignment')
 
 /*
  * All routes for the API are written in modules in the api/ directory.  The
@@ -23,7 +25,6 @@ const { assignmentSchema, getAssignmentsPage, getDownloadStreamById, getDownload
 const upload = multer({
   storage: multer.diskStorage({
     destination: `${__dirname}`,
- //destination: `C:/Users/Uma/CS493/assignment-4-uma-a/uploads/`,
     filename: (req, file, callback) => {
       const basename = crypto.pseudoRandomBytes(16).toString('hex');
       const extension = fileTypes[file.mimetype];
@@ -62,11 +63,12 @@ const upload = multer({
         contentType: req.file.mimetype,
         studentid: req.user,
         timestamp: submissionTime,
-	    assignmentid: req.params.id	
+	      assignmentid: req.params.id	
       };
       const id = await saveSubmissionFile(submission);
       await removeUploadedFile(req.file);
     
+      console.log("submission id: ", id);
       res.status(200).send({ id: id });
     } catch (err) {
       next(err);
@@ -82,6 +84,59 @@ const upload = multer({
     });
   }
 });
+
+router.get('/media/submissions/:filename', (req, res, next) => {
+  console.log("submissions filename: ", req.params.filename);
+  getDownloadStreamByFilename(req.params.filename)
+    .on('error', (err) => {
+      if (err.code === 'ENOENT') {
+        next();
+      } else {
+        next(err);
+      }
+    })
+    .on('file', (file) => {
+      res.status(200).type(file.metadata.contentType);
+    })
+    .pipe(res);
+});
+
+router.get('/:id/submissions', requireAuthentication, async (req, res, next) => {
+  var currUser = await getUserById(req.user, false);
+	var currAssign = await getAssignmentByID(req.params.id);
+	var currCourse = await getCourseById(currAssign.courseId);
+  var currCourse = await getCourseById(req.body.courseId);
+	if ((currUser.role == "instructor" && currUser._id.toString() == currCourse.instructorId) || currUser.role == "admin") {
+    try {
+      if (req.query.page) {
+        const coursesPage = await getSubmissionDetailsById(req.params.id, 1 , req.query.page);
+        res.status(200).send(coursesPage);
+      } else if (req.query.subject) {
+        const coursesSubject = await getSubmissionDetailsById(req.params.id, 2, req.query.studentId);
+        res.status(200).send(coursesSubject);
+      } else {  
+        const submission = await getSubmissionDetailsById(req.params.id, 0, 0);
+        if (submission) {
+          // const responseBody = {
+          //   _id: submission._id,
+          //   url: `/assignments/media/submissions/${submission.filename}`,
+          //   contentType: submission.metadata.contentType,
+          //   studentid: submission.metadata.studentid,
+          //   timestamp: submission.metadata.submissionTime,
+          //   assignmentid: submission.metadata.assignmentid
+          // };
+        console.log("submission: ", submission);
+        res.status(200).send(submission);
+        } else {
+          next();
+        }
+      }
+    } catch (err) {
+      next(err);
+    }
+  }
+});
+  
  
  
 //GET all submissions
