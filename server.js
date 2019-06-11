@@ -32,7 +32,7 @@ app.use(express.static('public'));
  * top-level router lives in api/index.js.  That's what we include here, and
  * it provides all of the routes.
  */
-app.use('/', api);
+//app.use('/', api);
 
 
 function getTokenBucket(ip) {
@@ -102,7 +102,10 @@ console.log("ellaspsed mili", ellapsedMillis)
 
 app.use(rateLimit);
 
+app.use('/', api);
+
 app.get('/', (req, res) => {
+  console.log("hello");
   res.status(200).json({
     timestamp: new Date().toString()
   });
