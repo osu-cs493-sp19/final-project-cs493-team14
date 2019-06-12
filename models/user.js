@@ -33,6 +33,31 @@ exports.insertNewUser = async function (user) {
     return result.insertedId;
 };
   
+ exports.getUsersPage = async function (page) {
+  const db = getDBReference();
+  const collection = db.collection('users');
+  const count = await collection.countDocuments();
+
+  const pageSize = 10;
+  const lastPage = Math.ceil(count / pageSize);
+  page = page < 1 ? 1 : page;
+  page = page > lastPage ? lastPage : page;
+  const offset = (page - 1) * pageSize;
+
+  const results = await collection.find({})
+    .sort({ _id: 1 })
+    .skip(offset)
+    .limit(pageSize)
+    .toArray();
+
+  return {
+    users: results,
+    page: page,
+    totalPages: lastPage,
+    pageSize: pageSize,
+    count: count
+  };
+}; 
   
 /*
 * Fetch a user from the DB based on user ID.
@@ -40,6 +65,7 @@ exports.insertNewUser = async function (user) {
 async function getUserById(id, includePassword) {
     const db = getDBReference();
     const collection = db.collection('users');
+	console.log("in function users by id")
     if (!ObjectId.isValid(id)) {
       return null;
     } else {
@@ -48,6 +74,8 @@ async function getUserById(id, includePassword) {
         .find({ _id: new ObjectId(id) })
         .project(projection)
         .toArray();
+		console.log("results at 0")
+		console.log(results[0]);
       return results[0];
     }
 };
