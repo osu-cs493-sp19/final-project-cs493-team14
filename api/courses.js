@@ -4,11 +4,11 @@
 
 const router = require('express').Router();
 
-const { validateAgainstSchema, validateFieldsForPatch } = require('../lib/validation');
-/*const { generateAuthToken, requireAuthentication } = require('../lib/auth');
-*/
+const { validateAgainstSchema, validateFieldsForPatch  } = require('../lib/validation');
+const { generateAuthToken, requireAuthentication } = require('../lib/auth');
 const {
   CourseSchema,
+  CourseSchemaForPatch,
   getAllCourses,
   getCourseById,
   insertNewCourse,
@@ -58,13 +58,15 @@ router.get('/', async (req, res) => {
 });
 
 /*
- * Route to create a new courses.
+ *Route to Creates a new Courses with specified data and adds it to the application's database. 
+ *Only an authenticated User with 'admin' role can create a new Course
  */
-router.post('/', async (req, res) => {
+router.post('/',requireAuthentication , async (req, res, next) => {
   if (validateAgainstSchema(req.body, CourseSchema)) {
     //const isAdmin = checkUserisAdmin();
-    const userid = 1;
-    if (userid == 1) {
+    //const userid = await getUserByEmail(req.user);
+    //console.log(req.body.instructorId.$id);
+    if (req.role == 'admin') {
       try {
         const id = await insertNewCourse(req.body);
         res.status(201).send({
@@ -113,33 +115,47 @@ router.get('/:id', async (req, res, next) => {
 });
 
 /*
- * Route to create new course 
+ * Route to update data fro a specific course 
  */
-router.post('/', async (req, res) => {
-  if (validateAgainstSchema(req.body, CourseSchema)) {
-    // const userid = await ;
-    const userid = 1;
-    if(userid == 1){
-      try {
-        const id = await insertNewCourse(req.body);
-        res.status(201).send({
-          id: id
-        });
-
-      } catch (err) {
-        console.error(err);
-        res.status(500).send({
-          error: "Error inserting course into DB.  Please try again later."
+router.patch('/:id', requireAuthentication, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const course = await getCourseById(id);
+  if (course != null) {
+    if (course.instructor_id == req.user || req.role == 'admin') {
+      if (validateAgainstSchema(req.body, CourseSchemaForPatch)) {
+        try {
+          const updateSuccessful = await updateCourseById(id, req.body);
+          if (updateSuccessful) {
+            res.status(200).send({
+              links: {
+                status: `success`,
+                success: `successfully patched course information.`,
+                course: `/courses/${id}`
+              }
+            });
+          } else {
+            next();
+          }
+        } catch (err) {
+          console.error(err);
+          res.status(500).send({
+            status:  `error`,
+            error: "Unable to patch course information."
+          });
+        }
+      } else {
+        res.status(400).send({
+          error: "Request body is not a valid course object."
         });
       }
     } else {
       res.status(403).send({
-        error: "The request was not made by an authenticated User satisfying the authorization criteria described above."
+            error: "Unauthorized to patch the resource."
       });
     }
   } else {
-    res.status(400).send({
-      error: "The request body was either not present or did not contain a valid Course object."
+    res.status(404).send({
+          error: "Course not found."
     });
   }
 });
@@ -147,10 +163,11 @@ router.post('/', async (req, res) => {
 /*
  * Route to delete a specific Course from the database.
  */
-router.delete('/:id',  async (req, res, next) => {
+router.delete('/:id', requireAuthentication,  async (req, res, next) => {
   // const userid = await ;
-  const userid =  1;
-  if(userid == 1 ){
+  //const userid =  1;
+  //if(userid == 1 ){
+  if (req.role == 'admin') {
     try {
       const deleteSuccessful = await deleteCourseById(req.params.id);
       if (deleteSuccessful) {
@@ -207,31 +224,50 @@ router.put('/:id', async (req, res, next) => {
   }
 });
 
-router.get('/:id/students', async (req, res, next) => {
-  try {
-    console.log("hi students");
-    const students = await getStudentsByCourseId(req.params.id);
-    if (students) {
-      res.status(200).send(students);
+/*
+ * Route to fetch a list of students enrolled in a given course by its id.
+ */
+router.get('/:id/students', requireAuthentication, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const course = await getCourseById(id);
+  if (course != null) {
+    if (course.instructor_id == req.user || req.role == 'admin') {
+      try {
+        const studentList = await getStudentsByCourseId(id);
+        res.status(200).send(studentList);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({
+          error: "error",
+          error: `Unable to fetch enrolled students.`
+        });
+      }
     } else {
-      next();
+      res.status(403).send({
+            error: "Unauthorized to view resource."
+      });
     }
-  } catch (err) {
-    console.log("error: ", err);
-    res.status(500).send({
-      error: "Unable to fetch students in course."
+  } else {
+    res.status(404).send({
+      error: "error",
+      error: `Specified course not found.`
     });
   }
+
 });
+
 
 /*
  * Route to create a new enrolled students.
  */
-router.post('/:id/students', async (req, res, next) => {
+router.post('/:id/students', requireAuthentication, async (req, res, next) => {
   if (req.body.students) {
     //const isAdmin = checkUserisAdmin();
-    const userid = 1;
-    if (userid == 1) {
+    //const userid = 1;
+    const id = parseInt(req.params.id);
+    const course = await getCourseById(id);
+    if (course != null) {
+    if (course.instructor_id == req.user || req.role == 'admin') {
       try {
         const id = await updateEnrollmentByCourseId(req.params.id, req.body);
         res.status(200).send({
@@ -251,11 +287,19 @@ router.post('/:id/students', async (req, res, next) => {
         error: "The request was not made by an authenticated User satisfying the authorization criteria described above."
       });
     }
-  } else {
+  }
+  else {
     res.status(400).send({
       error: "Request body is not a valid course object."
     });
   }
+}
+else {
+  res.status(404).send({
+    error: "error",
+    error: `Specified course not found.`
+  });
+}
 });
 
 router.delete('/:id/students', async (req, res, next) => {
@@ -289,38 +333,54 @@ router.delete('/:id/students', async (req, res, next) => {
   }
 });
 
-router.get('/:id/roster', async (req, res, next) => {
-  try {
-    console.log("hi students");
-    const roster = await getRosterByCourseId(req.params.id);
-    if (roster) {
-      fs.writeFile("/usr/src/app/api/studentRoster.csv", roster, function(error) {
-        if (error) {
-          console.error("write error:  " + error.message);
+router.get('/:id/roster',  requireAuthentication, async (req, res, next) => {
+  const id = parseInt(req.params.id);
+  const course = await getCourseById(id);
+  if (course != null) {
+    if (course.instructor_id == req.user || req.role == 'admin') {
+      try {
+        console.log("hi students");
+        const roster = await getRosterByCourseId(req.params.id);
+        if (roster) {
+          fs.writeFile("/usr/src/app/api/studentRoster.csv", roster, function(error) {
+            if (error) {
+              console.error("write error:  " + error.message);
+            } else {
+              console.log("Successful Write to ");
+            }
+          });
+          const csvFile = {
+            path: "/usr/src/app/api/studentRoster.csv",
+            contentType: "text/csv",
+            filename: "studentRoster.csv"
+          };
+          await saveCSVFile(csvFile);
+          const responseBody = {
+            url: `/courses/media/files/studentRoster.csv`
+          }
+          res.status(200).send(responseBody);
         } else {
-          console.log("Successful Write to ");
+          next();
         }
-      });
-      const csvFile = {
-        path: "/usr/src/app/api/studentRoster.csv",
-        contentType: "text/csv",
-        filename: "studentRoster.csv"
-      };
-      await saveCSVFile(csvFile);
-      const responseBody = {
-        url: `/courses/media/files/studentRoster.csv`
+      } catch (err) {
+        console.log("error: ", err);
+        res.status(500).send({
+          error: "Unable to fetch roster."
+        });
+       }
       }
-      res.status(200).send(responseBody);
+      else {
+        res.status(403).send({
+              error: "Unauthorized to access resource."
+        });
+      }
     } else {
-      next();
+      res.status(404).send({
+        error: "error",
+        error: `Specified course not found.`
+      });
     }
-  } catch (err) {
-    console.log("error: ", err);
-    res.status(500).send({
-      error: "Unable to fetch roster."
-    });
-  }
-});
+  });
 
 router.get('/media/files/:filename', (req, res, next) => {
   console.log("csv filename: ", req.params.filename);

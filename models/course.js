@@ -21,6 +21,20 @@ const CourseSchema = {
   //enrolledStudents: {required: false}
 };
 exports.CourseSchema = CourseSchema;
+
+/*
+ * Schema describing fields of a user object.
+ */
+const CourseSchemaForPatch = {
+  id: { required: false },
+  subject: { required: false },
+  number: { required: false },
+  title: { required: false },
+  term: { required: false },
+  instructor_id: { required: false }
+};
+exports.CourseSchemaForPatch = CourseSchemaForPatch;
+
 const fs = require('fs');
 
 function saveCSVFile (csv) {
@@ -145,6 +159,7 @@ exports.getCourseById = async function (id) {
    }
 }
 
+
 /*
  * Executes a DB query to insert a new course into the database.  Returns
  * a Promise that resolves to the ID of the newly-created course entry.
@@ -155,6 +170,7 @@ exports.insertNewCourse= async function (course) {
     const result = await collection.insertOne({course});
     return result.insertedId;
 };
+
 
 exports.deleteCourseById = async function (id) {
     const db = getDBReference();
