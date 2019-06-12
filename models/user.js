@@ -133,11 +133,13 @@ exports.checkUserisAdmin = async function (id) {
     const results = await collection
       .find({ _id: new ObjectId(id) })
       .toArray();
+    console.log("results role: ", results[0].role);
     if (results[0].role == "student") {
         return 0;
     } else if (results[0].role == "instructor") {
         return 1;
     } else if (results[0].role == "admin") {
+        console.log("hi");
         return 2;
     }
   };

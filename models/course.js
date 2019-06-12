@@ -278,15 +278,7 @@ async function updateCourseById(id, course) {
   const collection = db.collection('courses');
   const result = await collection.updateOne(
     { _id: new ObjectID(id) },
-    {$set: 
-      { 
-        subject: course.subject,   
-        number: course.number,
-        title: course.title,
-        term: course.term,
-        instructorId: course.instructorId
-      }
-    }
+    { $set: course }
   );
   console.log(result[0])
   return result.matchedCount > 0;

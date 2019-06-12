@@ -193,21 +193,15 @@ exports.insertNewAssignment = async function(assignment) {
 };
 
 
-//NEW PUT update a submission
+//NEW PATCH update an assignment
 exports.updateAssignmentByID = async function updateAssignmentByID(id, assignment) {
-  const assignmentValues = {
-courseId: assignment.courseId,
-title: assignment.title,
-points: assignment.points,
-due: assignment.due
-  };
   const db = getDBReference();
   const collection = db.collection('assignments');
-  const result = await collection.replaceOne(
+  const result = await collection.updateOne(
     { _id: new ObjectId(id) },
-     assignmentValues
+    { $set: assignment }
   );
-console.log(result[0])
+  console.log(result[0])
   return result.matchedCount > 0;
 }
 
