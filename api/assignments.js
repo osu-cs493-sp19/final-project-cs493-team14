@@ -1,6 +1,6 @@
 const router = require('express').Router();
 
-const { validateAgainstSchema } = require('../lib/validation');
+const { validateAgainstSchema, extractValidFields } = require('../lib/validation');
 const multer = require('multer');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -189,36 +189,35 @@ else {
   }
 });
 
-//PUT photos
-router.put('/:id', requireAuthentication, async (req, res, next) => {
+//PATCH assignments
+router.patch('/:id', requireAuthentication, async (req, res, next) => {
+  validFieldsBody = extractValidFields(req.body, assignmentSchema); 
 	console.log(req.user)
 	var currUser = await getUserById(req.user, false)
 	console.log(currUser)
 	var currCourse = await getCourseById(req.body.courseId)
 	if ((currUser.role == "instructor" && currUser._id.toString() == currCourse.instructorId) || currUser.role == "admin") {
-if (validateAgainstSchema(req.body, assignmentSchema)) {
-  try {
-    const updateSuccessful = await updateAssignmentByID(req.params.id, req.body);
-	console.log(req.params.id);
-	  console.log(updateSuccessful)
-    if (updateSuccessful) {
-      res.status(200).send({});
-    } 
-	else {
-      next();
+    if (validFieldsBody != null) {
+      try {
+        const updateSuccessful = await updateAssignmentByID(req.params.id, req.body);
+	      console.log(req.params.id);
+	      console.log(updateSuccessful)
+        if (updateSuccessful) {
+          res.status(200).send({});
+        } else {
+          next();
+        }
+      } catch (err) {
+        res.status(500).send({
+          error: "Unable to update assignment."
+        });
+      }
+    } else {
+      res.status(400).send({
+        err: "Request body does not contain a valid assignment."
+      });
     }
-  } catch (err) {
-    res.status(500).send({
-      error: "Unable to update assignment."
-    });
-  }
-} 
-else {
-  res.status(400).send({
-    err: "Request body does not contain a valid assignment."
-  });
-}
-} else {
+  } else {
     res.status(403).send({
       error: "Unauthorized to access the specified resource"
     });
